@@ -1,12 +1,12 @@
 #include<bits/stdc++.h>
 using namespace std;
-#define N_m 10
-#define M_m 200
+#define N_m 1000
+#define M_m 1000
 #define INF 1000000000
 
-vector<vector<int>> adj(M_m*5, vector<int>(M_m*5, INF));
-vector<int> vis(M_m*5), dis(M_m*5), par(M_m*5), pot(M_m*5);
-vector<vector<int>> cap(M_m*5, vector<int>(M_m*5));
+vector<vector<int>> adj(N_m+M_m, vector<int>(N_m+M_m, INF));
+vector<int> vis(N_m+M_m), dis(N_m+M_m), par(N_m+M_m), pot(N_m+M_m);
+vector<vector<int>> cap(N_m+M_m, vector<int>(N_m+M_m));
 
 int dijkstra(int s, int t, int n) {
     fill(vis.begin(), vis.end(), 0);
@@ -61,63 +61,57 @@ int min_cost_flow(int s, int t, int k, int n) {
 }
 
 int N, M;
-vector<string> A(N_m);
-vector<int> T(N_m);
-vector<string> B(M_m);
+vector<string> A(N_m), B(M_m);
+vector<int> Q(N_m), R(M_m);
 vector<vector<string>> S(M_m, vector<string>(N_m));
 
 void solve() {
     cin >> N >> M;
     for (int i=0; i<N; ++i)
-        cin >> A[i] >> T[i];
-    for (int i=0; i<M; ++i) {
-        cin >> B[i];
-        for (int j=0; j<N; ++j)
+        cin >> A[i] >> Q[i];
+    for (int i=0; i<M; ++i)
+        cin >> B[i] >> R[i];
+    for (int i=0; i<N; ++i) {
+        for (int j=0; j<M; ++j)
             cin >> S[i][j];
     }
-    vector<int> sum(N+5);
-    map<string, int> sti;
+    map<string, int> sta, stb;
+    int sma=0, smb=0;
     for (int i=0; i<N; ++i) {
-        sum[i+1] = sum[i] + T[i];
-        sti[A[i]] = i;
+        sta[A[i]] = i;
+        sma += Q[i];
     }
     for (int i=0; i<M; ++i) {
-        for (int j=0; j<N; ++j) {
-            for (int k=M+sum[sti[S[i][j]]]; k<M+sum[sti[S[i][j]]+1]; ++k) {
-                adj[i][k] = j+1;
-                adj[k][i] = -(j+1);
-                cap[i][k] = 1;
-            }
+        stb[B[i]] = i;
+        smb += R[i];
+    }
+    // 0~N-1 / N~N+M-1 / N+M / N+M+1
+    for (int i=0; i<N; ++i) {
+        for (int j=0; j<M; ++j) {
+            int k = N+stb[S[i][j]];
+            adj[i][k] = j+1;
+            adj[k][i] = -(j+1);
+            cap[i][k] = 1;
         }
     }
+    for (int i=0; i<N; ++i) {
+        adj[N+M][i] = 0;
+        adj[i][N+M] = 0;
+        cap[N+M][i] = Q[i];
+    }
     for (int i=0; i<M; ++i) {
-        adj[M+sum[N]][i] = 0;
-        adj[i][M+sum[N]] = 0;
-        cap[M+sum[N]][i] = 1;
+        adj[N+i][N+M+1] = 0;
+        adj[N+M+1][N+i] = 0;
+        cap[N+i][N+M+1] = R[i];
     }
-    for (int i=M; i<M+sum[N]; ++i) {
-        adj[i][M+sum[N]+1] = 0;
-        adj[M+sum[N]+1][i] = 0;
-        cap[i][M+sum[N]+1] = 1;
-    }
-    int res = min_cost_flow(M+sum[N], M+sum[N]+1, M, M+sum[N]+2);
+    int res = min_cost_flow(N+M, N+M+1, min(sma,smb), N+M+2);
     cout << res << endl;
-    for (int i=0; i<M; ++i) {
-        int k = -1;
-        for (int j=M; j<M+sum[N]; ++j) {
-            if (cap[j][i]>0) {
-                if (k==-1)
-                    k = j;
-                else {
-                    cout << -1 << endl;
-                    return;
-                }
+    for (int i=0; i<N; ++i) {
+        for (int j=0; j<M; ++j) {
+            if (cap[N+j][i]>0) {
+                cout << A[i] << ' ' << B[j] << ' ' << adj[i][N+j] << endl;
             }
         }
-        int j = 0;
-        while (k>=M+sum[j+1])
-            j += 1;
-        cout << B[i] << ' ' << A[j] << ' ' << adj[i][k] << endl;
     }
 }
 
